@@ -1,0 +1,184 @@
+<html>
+    <head>
+        <title>RoomService</title>
+        <script>
+window.addEventListener('beforeunload', function (e) {
+  event.preventDefault();
+  event.returnValue = '';
+});
+
+var ready = (callback) => {
+  if (document.readyState != "loading") callback();
+  else document.addEventListener("DOMContentLoaded", callback);
+}
+
+ready(() => { 
+  var table = document.querySelector("table");
+
+  for (floor = 1; floor <= 9; floor++) {
+    var row = table.insertRow();
+    row.className = 'floor';
+    var cell = row.insertCell();
+    cell.innerHTML = floor;
+    cell.className = 'floorNo';
+
+    var lastRoom = (floor <= 3) ? 35 : 21;
+
+    for (room = 1; room <= lastRoom; room++) {
+      var cellId = floor + "_" + room;
+      var roomNo = floor + ("0" + room).slice(-2);
+      var cell = row.insertCell();
+      cell.innerHTML = roomNo;
+      cell.id = cellId;
+      cell.vAlign="top";
+
+      storeCellData(cell, 'roomNo', roomNo);
+      refreshCell(cell);
+    }
+  }
+
+  setTimeout(updateTable, 2000);
+
+});
+
+function updateTable() {
+
+    document.querySelectorAll('table tr').forEach(row => {    
+      row.querySelectorAll('td').forEach(cell => {     
+        var roomNo = loadCellData(cell, 'roomNo');
+        
+        if (roomNo != null) {
+            var startTime = loadCellData(cell, 'startTime');
+
+            var minutesLine = "";
+
+            if (startTime) {
+            if (startTime == "null")
+                console.log(startTime);
+            var minutes = diffMinutes(Date.now(), Number(startTime));
+            minutesLine = "\n" + minutes;
+            }
+
+            cell.innerHTML = roomNo + minutesLine;
+        }
+        });
+    });
+
+  setTimeout(updateTable, 2000);
+}
+
+document.addEventListener('click', function(event) {
+  if (event.target.nodeName == 'TD') {
+    var cell = event.target;
+    var state = loadCellData(cell, 'state') || 'first';
+
+    switch (state) {
+        case 'first':
+        storeCellData(cell, 'state', 'second');
+        storeCellData(cell, 'startTime', Date.now());
+        break;
+        case 'second':
+        storeCellData(cell, 'state', 'third');
+        break;
+        case 'third':
+        storeCellData(cell, 'state', 'first');
+        removeCellData(cell, 'startTime');
+        break;
+        default:
+        break;
+    }
+    
+    refreshCell(cell);
+  }
+});
+
+function refreshCell(cell) {
+	var state = loadCellData(cell, 'state') || 'first';
+  
+  switch (state) {
+    case 'first':
+      cell.classList.remove('state1');
+      cell.classList.remove('state2');
+      break;
+    case 'second':
+     cell.classList.add('state1');
+      break;
+    case 'third':
+      cell.classList.add('state2');
+      break;
+    default:
+      break;
+  }
+}
+
+function diffMinutes(date2, date1) {
+	date2 = new Date(date2);
+  date1 = new Date(date1);
+	var diff = (date2.getTime() - date1.getTime()) / 1000;
+  diff /= 60;
+  return Math.abs(Math.round(diff));
+}
+
+function storeCellData(cell, key, value) {	
+  if (typeof(Storage) !== "undefined")  {
+  	var id = cell.id;   
+  	var fullKey = id + ":" + key;
+  	localStorage.setItem(fullKey, value);
+  }
+  else {
+  	cell.data(key, value);
+  }
+}
+
+function loadCellData(cell, key) {
+	if (typeof(Storage) !== "undefined")  {
+  
+    var id = cell.id;   
+  	var fullKey = id + ":" + key;
+  	var value = localStorage.getItem(fullKey);
+    return value;
+  }
+  else {
+    return cell.data(key);
+  }
+}
+
+function removeCellData(cell, key) {
+	var id = cell.id;
+  var fullKey = id + ":" + key;
+    
+	localStorage.removeItem(fullKey);
+}
+        </script>
+        <style>
+.state1 {
+  background-color: red;
+}
+
+.state2 {
+  background-color: orange;
+}
+
+td {
+  min-width: 30px;
+  max-width: 30px;
+  height: 36px;
+  text-align: center;
+  border: 1px solid black;
+  white-space: pre;
+  transition: background-color 1s linear;
+  -moz-transition: background-color 1s linear;
+  -webkit-transition: background-color 1s linear;
+  -ms-transition: background-color 1s linear;
+}
+
+.floorNo {
+  background-color: gray;
+}
+        </style>
+    </head>
+    <body>
+        <table>
+        </table>   
+    </body>
+</html>
